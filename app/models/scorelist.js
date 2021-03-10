@@ -1,13 +1,16 @@
 const mongoose = require('mongoose')
 
-const exampleSchema = new mongoose.Schema({
-  title: {
+const scorelistSchema = new mongoose.Schema({
+  score: {
+    type: Number,
+    required: true
+  },
+  username: {
     type: String,
     required: true
   },
-  text: {
-    type: String,
-    required: true
+  placement: {
+    type: Number
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,4 +21,4 @@ const exampleSchema = new mongoose.Schema({
   timestamps: true
 })
 
-module.exports = mongoose.model('Example', exampleSchema)
+module.exports = mongoose.model('Scorelist', scorelistSchema)

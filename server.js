@@ -1,104 +1,82 @@
-'use strict'
-require('dotenv').load({
-  silent: process.env.NODE_ENV === 'production' // don't log missing .env
+// require necessary NPM packages
+const express = require('express')
+const mongoose = require('mongoose')
+const cors = require('cors')
+
+// require route files
+const exampleRoutes = require('./app/routes/example_routes')
+const userRoutes = require('./app/routes/user_routes')
+const gameRoutes = require('./app/routes/game_routes')
+const scorelistRoutes = require('./app/routes/scorelist_routes')
+
+// require middleware
+const errorHandler = require('./lib/error_handler')
+const replaceToken = require('./lib/replace_token')
+const requestLogger = require('./lib/request_logger')
+
+// require database configuration logic
+// `db` will be the actual Mongo URI as a string
+const db = require('./config/db')
+
+// require configured passport authentication middleware
+const auth = require('./lib/auth')
+
+// define server and client ports
+// used for cors and local port declaration
+const serverDevPort = 4741
+const clientDevPort = 7165
+
+// establish database connection
+// use new version of URL parser
+// use createIndex instead of deprecated ensureIndex
+mongoose.connect(db, {
+  useNewUrlParser: true,
+  useCreateIndex: true
 })
 
-const express = require('express')
+// instantiate express application object
 const app = express()
-const middleware = require('app/middleware')
 
-app.set('root', __dirname)
+// set CORS headers on response from this API using the `cors` NPM package
+// `CLIENT_ORIGIN` is an environment variable that will be set on Heroku
+app.use(cors({ origin: process.env.CLIENT_ORIGIN || `http://localhost:${clientDevPort}` }))
 
-middleware.before(app)
+// define port for API to run on
+const port = process.env.PORT || serverDevPort
 
-const routes = require('config/routes')
+// this middleware makes it so the client can use the Rails convention
+// of `Authorization: Token token=<token>` OR the Express convention of
+// `Authorization: Bearer <token>`
+app.use(replaceToken)
 
-app.use(routes.router)
+// register passport authentication middleware
+app.use(auth)
 
-middleware.after(app)
+// add `express.json` middleware which will parse JSON requests into
+// JS objects before they reach the route files.
+// The method `.use` sets up middleware for the Express application
+app.use(express.json())
+// this parses requests sent by `$.ajax`, which use a different content type
+app.use(express.urlencoded({ extended: true }))
 
-// catch 404 and forward to error handler
-app.use(middleware['404'])
+// log each request as it comes in for debugging
+app.use(requestLogger)
 
-// error handlers
-app.use(middleware['error-handler'])
+// register route files
+app.use(exampleRoutes)
+app.use(userRoutes)
+app.use(gameRoutes)
+app.use(scorelistRoutes)
 
-const debug = require('debug')('express-api-template:server')
-const http = require('http')
+// register error handling middleware
+// note that this comes after the route middlewares, because it needs to be
+// passed any error messages from them
+app.use(errorHandler)
 
-/**
- * Normalize a port into a number, string, or false.
- */
+// run API on designated port (4741 in this case)
+app.listen(port, () => {
+  console.log('listening on port ' + port)
+})
 
-const normalizePort = (val) => {
-  const port = parseInt(val, 10)
-  debug('Normalied port is', port)
-  return port >= 0 ? port : isNaN(port) ? val : false
-}
-
-/**
- * Get port from environment and store in Express.
- */
-
-const devPort = +('GA'.split('').reduce((p, c) =>
- p + c.charCodeAt().toString(16), '')
-)
-
-const port = normalizePort(process.env.PORT || devPort)
-app.set('port', port)
-
-/**
- * Create HTTP server.
- */
-
-const server = http.createServer(app)
-
-/**
- * Event listener for HTTP server "error" event.
- */
-
-const onError = (error) => {
-  if (error.syscall !== 'listen') {
-    throw error
-  }
-
-  const bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges')
-      process.exit(1)
-      break
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use')
-      process.exit(1)
-      break
-    default:
-      throw error
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-const onListening = () => {
-  const addr = server.address()
-  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port
-  console.log('Server listening on ' + bind)
-}
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.on('error', onError)
-server.on('listening', onListening)
-server.listen(port)
-
-module.exports = {
-  server
-}
+// needed for testing
+module.exports = app
