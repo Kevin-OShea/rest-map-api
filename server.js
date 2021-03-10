@@ -5,33 +5,21 @@ const cors = require('cors')
 
 // require route files
 const exampleRoutes = require('./app/routes/example_routes')
-const userRoutes = require('./app/routes/user_routes')
-const gameRoutes = require('./app/routes/game_routes')
-const scorelistRoutes = require('./app/routes/scorelist_routes')
-
-// require middleware
-const errorHandler = require('./lib/error_handler')
-const replaceToken = require('./lib/replace_token')
-const requestLogger = require('./lib/request_logger')
-
-// require database configuration logic
-// `db` will be the actual Mongo URI as a string
-const db = require('./config/db')
-
-// require configured passport authentication middleware
-const auth = require('./lib/auth')
+// const userRoutes = require('./app/routes/user_routes')
+// const gameRoutes = require('./app/routes/game_routes')
+// const scorelistRoutes = require('./app/routes/scorelist_routes')
 
 // define server and client ports
 // used for cors and local port declaration
-const serverDevPort = 4741
+const serverDevPort = 8080
 const clientDevPort = 7165
 
 // establish database connection
 // use new version of URL parser
 // use createIndex instead of deprecated ensureIndex
-mongoose.connect(db, {
-  useNewUrlParser: true,
-  useCreateIndex: true
+mongoose.connect("mongodb+srv://admin:admin@rest-api.zcfnr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 })
 
 // instantiate express application object
@@ -44,14 +32,6 @@ app.use(cors({ origin: process.env.CLIENT_ORIGIN || `http://localhost:${clientDe
 // define port for API to run on
 const port = process.env.PORT || serverDevPort
 
-// this middleware makes it so the client can use the Rails convention
-// of `Authorization: Token token=<token>` OR the Express convention of
-// `Authorization: Bearer <token>`
-app.use(replaceToken)
-
-// register passport authentication middleware
-app.use(auth)
-
 // add `express.json` middleware which will parse JSON requests into
 // JS objects before they reach the route files.
 // The method `.use` sets up middleware for the Express application
@@ -59,19 +39,12 @@ app.use(express.json())
 // this parses requests sent by `$.ajax`, which use a different content type
 app.use(express.urlencoded({ extended: true }))
 
-// log each request as it comes in for debugging
-app.use(requestLogger)
 
 // register route files
 app.use(exampleRoutes)
-app.use(userRoutes)
-app.use(gameRoutes)
-app.use(scorelistRoutes)
-
-// register error handling middleware
-// note that this comes after the route middlewares, because it needs to be
-// passed any error messages from them
-app.use(errorHandler)
+// app.use(userRoutes)
+// app.use(gameRoutes)
+// app.use(scorelistRoutes)
 
 // run API on designated port (4741 in this case)
 app.listen(port, () => {
