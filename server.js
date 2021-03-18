@@ -5,6 +5,7 @@ const cors = require('cors')
 
 // require route files
 const exampleRoutes = require('./app/routes/example_routes')
+const restaurantRoutes = require('./app/routes/restaurant_routes')
 // const userRoutes = require('./app/routes/user_routes')
 // const gameRoutes = require('./app/routes/game_routes')
 // const scorelistRoutes = require('./app/routes/scorelist_routes')
@@ -42,6 +43,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // register route files
 app.use(exampleRoutes)
+app.use(restaurantRoutes)
 // app.use(userRoutes)
 // app.use(gameRoutes)
 // app.use(scorelistRoutes)
